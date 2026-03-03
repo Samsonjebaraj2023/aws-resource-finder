@@ -1,0 +1,929 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <title>AWS Resource Finder</title>
+    <style>
+        :root {
+            --aws-orange: #FF9900;
+            --aws-dark: #232F3E;
+            --aws-blue: #146EB4;
+            --card-bg: #1a2332;
+            --input-bg: #0d1825;
+            --border: rgba(255, 153, 0, 0.3);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: #0a0f1a;
+            color: #e0e6f0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        header {
+            width: 100%;
+            background: var(--aws-dark);
+            border-bottom: 3px solid var(--aws-orange);
+            padding: 16px 40px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, .5);
+        }
+
+        header h1 {
+            font-size: 1.4rem;
+            color: #fff;
+        }
+
+        header span {
+            color: var(--aws-orange);
+        }
+
+        main {
+            width: 100%;
+            max-width: 900px;
+            padding: 40px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 28px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 32px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, .4);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--aws-orange), var(--aws-blue));
+        }
+
+        .card-title {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--aws-orange);
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            margin-bottom: 24px;
+        }
+
+        .field {
+            margin-bottom: 18px;
+        }
+
+        label {
+            display: block;
+            font-size: .78rem;
+            font-weight: 600;
+            color: #8899aa;
+            text-transform: uppercase;
+            letter-spacing: .8px;
+            margin-bottom: 8px;
+        }
+
+        .input-wrap {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .input-wrap .ico {
+            position: absolute;
+            left: 14px;
+            font-size: 14px;
+            pointer-events: none;
+        }
+
+        input,
+        textarea {
+            width: 100%;
+            background: var(--input-bg);
+            border: 1px solid rgba(255, 255, 255, .1);
+            border-radius: 10px;
+            color: #e0e6f0;
+            font-size: .92rem;
+            font-family: 'Courier New', monospace;
+            transition: border-color .2s, box-shadow .2s;
+            outline: none;
+        }
+
+        input {
+            padding: 12px 14px 12px 40px;
+        }
+
+        textarea {
+            padding: 12px 14px 12px 14px;
+            resize: vertical;
+            min-height: 90px;
+            line-height: 1.6;
+        }
+
+        input:focus,
+        textarea:focus {
+            border-color: var(--aws-orange);
+            box-shadow: 0 0 0 3px rgba(255, 153, 0, .15);
+        }
+
+        .eye-btn {
+            position: absolute;
+            right: 12px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #556677;
+            padding: 4px;
+            font-size: 14px;
+        }
+
+        .eye-btn:hover {
+            color: var(--aws-orange);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 10px;
+            font-size: .95rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all .2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--aws-orange), #e08000);
+            color: #fff;
+            box-shadow: 0 4px 16px rgba(255, 153, 0, .3);
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 24px rgba(255, 153, 0, .45);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, var(--aws-blue), #0d5a96);
+            color: #fff;
+            box-shadow: 0 4px 16px rgba(20, 110, 180, .3);
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+            transform: translateY(-2px);
+        }
+
+        .btn:disabled {
+            opacity: .5;
+            cursor: not-allowed;
+        }
+
+        .alert {
+            border-radius: 10px;
+            padding: 14px 18px;
+            font-size: .88rem;
+            display: none;
+            align-items: flex-start;
+            gap: 10px;
+        }
+
+        .alert.show {
+            display: flex;
+        }
+
+        .alert-success {
+            background: rgba(46, 204, 113, .12);
+            border: 1px solid rgba(46, 204, 113, .4);
+            color: #2ecc71;
+        }
+
+        .alert-error {
+            background: rgba(231, 76, 60, .12);
+            border: 1px solid rgba(231, 76, 60, .4);
+            color: #e74c3c;
+        }
+
+        #session-badge {
+            display: none;
+            background: rgba(46, 204, 113, .1);
+            border: 1px solid rgba(46, 204, 113, .35);
+            border-radius: 12px;
+            padding: 14px 18px;
+            font-size: .82rem;
+            color: #a0ffcc;
+            gap: 12px;
+            align-items: flex-start;
+        }
+
+        #session-badge.show {
+            display: flex;
+        }
+
+        /* ─── Multi-ID Input area ─── */
+        .id-input-area {
+            position: relative;
+        }
+
+        #resource-ids {
+            padding-left: 14px;
+            padding-top: 12px;
+        }
+
+        .id-counter {
+            position: absolute;
+            bottom: 10px;
+            right: 14px;
+            font-size: .72rem;
+            color: #445566;
+            font-family: monospace;
+            pointer-events: none;
+        }
+
+        .input-hint {
+            font-size: .75rem;
+            color: #445566;
+            margin-top: 6px;
+        }
+
+        /* Tag chips */
+        .chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .chip {
+            background: rgba(255, 153, 0, .1);
+            border: 1px solid rgba(255, 153, 0, .25);
+            color: #f0a832;
+            border-radius: 20px;
+            padding: 4px 12px;
+            font-size: .75rem;
+            font-family: monospace;
+            cursor: pointer;
+            transition: all .15s;
+            user-select: none;
+        }
+
+        .chip:hover {
+            background: rgba(255, 153, 0, .2);
+        }
+
+        /* ─── Progress ─── */
+        #progress-wrap {
+            display: none;
+            margin-top: 16px;
+        }
+
+        #progress-wrap.show {
+            display: block;
+        }
+
+        .progress-label {
+            font-size: .8rem;
+            color: #8899aa;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .progress-bar-bg {
+            background: rgba(255, 255, 255, .08);
+            border-radius: 20px;
+            height: 6px;
+            overflow: hidden;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--aws-orange), var(--aws-blue));
+            border-radius: 20px;
+            width: 0%;
+            transition: width .4s ease;
+        }
+
+        /* ─── Summary bar ─── */
+        .summary-bar {
+            display: flex;
+            gap: 14px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
+
+        .summary-pill {
+            border-radius: 10px;
+            padding: 10px 18px;
+            font-size: .85rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .pill-total {
+            background: rgba(255, 255, 255, .06);
+            border: 1px solid rgba(255, 255, 255, .1);
+            color: #c8d8e8;
+        }
+
+        .pill-found {
+            background: rgba(46, 204, 113, .12);
+            border: 1px solid rgba(46, 204, 113, .35);
+            color: #2ecc71;
+        }
+
+        .pill-notfound {
+            background: rgba(231, 76, 60, .12);
+            border: 1px solid rgba(231, 76, 60, .35);
+            color: #e74c3c;
+        }
+
+        /* ─── Result items ─── */
+        .result-item {
+            background: rgba(0, 0, 0, .25);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, .07);
+            margin-bottom: 18px;
+            overflow: hidden;
+            transition: border-color .2s;
+        }
+
+        .result-item:hover {
+            border-color: rgba(255, 153, 0, .25);
+        }
+
+        .result-item.not-found-item {
+            border-color: rgba(231, 76, 60, .2);
+            background: rgba(231, 76, 60, .04);
+        }
+
+        .result-item-header {
+            padding: 14px 18px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            flex-wrap: wrap;
+        }
+
+        .result-item-header:hover .item-arrow {
+            color: var(--aws-orange);
+        }
+
+        .item-num {
+            background: rgba(255, 255, 255, .08);
+            color: #8899aa;
+            border-radius: 6px;
+            padding: 3px 9px;
+            font-size: .75rem;
+            font-family: monospace;
+            flex-shrink: 0;
+        }
+
+        .item-type-badge {
+            background: linear-gradient(135deg, var(--aws-orange), #e08000);
+            color: #fff;
+            border-radius: 6px;
+            padding: 4px 12px;
+            font-size: .78rem;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .item-id {
+            font-family: monospace;
+            font-size: .85rem;
+            color: #c0d0e0;
+            background: rgba(255, 255, 255, .05);
+            border-radius: 6px;
+            padding: 4px 10px;
+            flex: 1;
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .item-region {
+            background: rgba(20, 110, 180, .2);
+            border: 1px solid rgba(20, 110, 180, .4);
+            color: #5ba4f5;
+            border-radius: 6px;
+            padding: 4px 10px;
+            font-size: .78rem;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+
+        .item-status-ok {
+            color: #2ecc71;
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+
+        .item-status-fail {
+            color: #e74c3c;
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+
+        .item-arrow {
+            color: #445566;
+            margin-left: auto;
+            flex-shrink: 0;
+            transition: transform .2s, color .2s;
+            font-size: 12px;
+        }
+
+        .item-arrow.open {
+            transform: rotate(90deg);
+        }
+
+        .item-body {
+            display: none;
+            padding: 0 18px 18px;
+        }
+
+        .item-body.open {
+            display: block;
+        }
+
+        .result-error-msg {
+            color: #e74c3c;
+            font-size: .84rem;
+            padding: 10px 14px;
+            background: rgba(231, 76, 60, .08);
+            border-radius: 8px;
+        }
+
+        /* Detail grid */
+        .detail-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+            gap: 12px;
+            margin-top: 4px;
+        }
+
+        .detail-item {
+            background: var(--input-bg);
+            border: 1px solid rgba(255, 255, 255, .07);
+            border-radius: 10px;
+            padding: 12px;
+        }
+
+        .detail-key {
+            font-size: .68rem;
+            color: #667788;
+            text-transform: uppercase;
+            letter-spacing: .7px;
+            margin-bottom: 5px;
+        }
+
+        .detail-val {
+            font-size: .86rem;
+            font-weight: 600;
+            color: #d8e8f8;
+            word-break: break-all;
+            font-family: monospace;
+        }
+
+        .tags-wrap {
+            margin-top: 14px;
+        }
+
+        .tags-wrap h5 {
+            font-size: .74rem;
+            color: #556677;
+            text-transform: uppercase;
+            letter-spacing: .7px;
+            margin-bottom: 8px;
+        }
+
+        .tag-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            background: rgba(20, 110, 180, .12);
+            border: 1px solid rgba(20, 110, 180, .25);
+            border-radius: 20px;
+            padding: 3px 10px;
+            font-size: .76rem;
+            margin: 3px;
+        }
+
+        .tag-k {
+            color: #5ba4f5;
+        }
+
+        .tag-sep {
+            color: #334;
+        }
+
+        .tag-v {
+            color: #c8d8e8;
+        }
+
+        .meta-row {
+            margin-top: 14px;
+            font-size: .76rem;
+            color: #445566;
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        /* Export */
+        .export-btn {
+            background: rgba(255, 153, 0, .1);
+            border: 1px solid rgba(255, 153, 0, .3);
+            color: #f0a832;
+            border-radius: 8px;
+            padding: 8px 18px;
+            font-size: .8rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all .2s;
+        }
+
+        .export-btn:hover {
+            background: rgba(255, 153, 0, .2);
+        }
+
+        .logout-btn {
+            position: absolute;
+            top: 16px;
+            right: 20px;
+            background: rgba(231, 76, 60, .15);
+            border: 1px solid rgba(231, 76, 60, .35);
+            color: #e74c3c;
+            border-radius: 8px;
+            padding: 6px 14px;
+            font-size: .8rem;
+            cursor: pointer;
+        }
+
+        .logout-btn:hover {
+            background: rgba(231, 76, 60, .28);
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255, 255, 255, .3);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin .7s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg)
+            }
+        }
+
+        footer {
+            color: #334455;
+            font-size: .75rem;
+            padding: 24px;
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <svg viewBox="0 0 80 50" width="40" height="40"><text x="0" y="38" font-size="42" font-family="Arial Black"
+                fill="#FF9900">aws</text></svg>
+        <h1>AWS <span>Resource Finder</span></h1>
+    </header>
+    <main>
+
+        <!-- Login -->
+        <div class="card" id="login-card">
+            <div class="card-title">🔑 AWS Credentials</div>
+            <div class="field">
+                <label>AWS Access Key ID</label>
+                <div class="input-wrap"><span class="ico">🔑</span>
+                    <input id="access-key" type="text" placeholder="AKIAIOSFODNN7EXAMPLE" autocomplete="off"
+                        spellcheck="false" />
+                </div>
+            </div>
+            <div class="field">
+                <label>AWS Secret Access Key</label>
+                <div class="input-wrap"><span class="ico">🔒</span>
+                    <input id="secret-key" type="password" placeholder="wJalrXUtnFEMI/K7MDENG..." autocomplete="off"
+                        spellcheck="false" />
+                    <button class="eye-btn" onclick="toggleVis('secret-key')">👁</button>
+                </div>
+            </div>
+            <div class="field">
+                <label>AWS Session Token <span style="color:#445566;font-weight:400"></span></label>
+                <div class="input-wrap"><span class="ico">🛡</span>
+                    <input id="session-token" type="password" placeholder="FwoGZXIvYXdzEHcaDG…" autocomplete="off"
+                        spellcheck="false" />
+                    <button class="eye-btn" onclick="toggleVis('session-token')">👁</button>
+                </div>
+            </div>
+            <div id="login-alert" class="alert" style="margin-bottom:14px;"></div>
+            <button class="btn btn-primary" id="login-btn" onclick="doLogin()">🔌 Connect to AWS</button>
+        </div>
+
+        <!-- Session badge -->
+        <div id="session-badge">✅
+            <div>
+                <div style="font-weight:700;margin-bottom:4px;">Connected to AWS</div>
+                <div id="session-account" style="font-size:.78rem;color:#5ba;margin-top:4px;"></div>
+                <div id="session-arn" style="font-size:.78rem;color:#5ba;margin-top:2px;word-break:break-all;"></div>
+            </div>
+        </div>
+
+        <!-- Search -->
+        <div class="card" id="search-card" style="display:none;position:relative;">
+            <button class="logout-btn" onclick="doLogout()">⏻ Disconnect</button>
+            <div class="card-title">🔍 Search Resources</div>
+
+            <div class="field">
+                <label>Resource IDs <span style="color:#445566;font-weight:400">(one per line or
+                        comma-separated)</span></label>
+                <div class="id-input-area">
+                    <textarea id="resource-ids"
+                        placeholder="i-06c09dee4bdc3a5c0&#10;vpc-06b10a40139eb4d29&#10;sg-0abc123def456789&#10;&#10;or: i-06c09dee4bdc3a5c0, vpc-06b10a40139eb4d29"
+                        oninput="updateCounter()" onkeydown="handleKey(event)"></textarea>
+                    <div class="id-counter" id="id-counter">0 IDs</div>
+                </div>
+                <div class="input-hint">💡 Supports up to 20 resource IDs at once. Mix different types freely.</div>
+            </div>
+
+            <div style="font-size:.75rem;color:#667788;margin-bottom:6px;">Quick prefixes (click to add):</div>
+            <div class="chips">
+                <span class="chip" onclick="addPrefix('vpc-')">vpc-</span>
+                <span class="chip" onclick="addPrefix('subnet-')">subnet-</span>
+                <span class="chip" onclick="addPrefix('sg-')">sg-</span>
+                <span class="chip" onclick="addPrefix('i-')">i- (EC2)</span>
+                <span class="chip" onclick="addPrefix('vol-')">vol-</span>
+                <span class="chip" onclick="addPrefix('snap-')">snap-</span>
+                <span class="chip" onclick="addPrefix('ami-')">ami-</span>
+                <span class="chip" onclick="addPrefix('nat-')">nat-</span>
+                <span class="chip" onclick="addPrefix('igw-')">igw-</span>
+                <span class="chip" onclick="addPrefix('rtb-')">rtb-</span>
+                <span class="chip" onclick="addPrefix('eni-')">eni-</span>
+                <span class="chip" onclick="addPrefix('eipalloc-')">eipalloc-</span>
+                <span class="chip" onclick="addPrefix('s3://')">s3://</span>
+            </div>
+
+            <div id="search-alert" class="alert" style="margin-top:16px;"></div>
+
+            <div id="progress-wrap">
+                <div class="progress-label"><span id="progress-text">Searching…</span><span id="progress-pct">0%</span>
+                </div>
+                <div class="progress-bar-bg">
+                    <div class="progress-bar-fill" id="progress-fill"></div>
+                </div>
+            </div>
+
+            <button class="btn btn-secondary" id="search-btn" onclick="doSearch()" style="margin-top:20px;">🔍 Search
+                All Resources</button>
+        </div>
+
+        <!-- Results -->
+        <div class="card" id="results" style="display:none;">
+            <div
+                style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:20px;">
+                <div class="card-title" style="margin-bottom:0;">📋 Results</div>
+                <button class="export-btn" onclick="exportJSON()">⬇ Export JSON</button>
+            </div>
+            <div class="summary-bar" id="summary-bar"></div>
+            <div id="result-list"></div>
+            <div class="meta-row" id="meta-row"></div>
+        </div>
+
+    </main>
+    <footer>Searches all 20 AWS regions in parallel · Supports mixed resource types in one query</footer>
+
+    <script>
+        const API = "http://localhost:5002";
+        let creds = {};
+        let lastResults = null;
+
+        function toggleVis(id) { const i = document.getElementById(id); i.type = i.type === 'password' ? 'text' : 'password'; }
+        function showAlert(id, type, msg) { const el = document.getElementById(id); el.className = `alert alert-${type} show`; el.innerHTML = msg; }
+        function hideAlert(id) { document.getElementById(id).className = 'alert'; }
+
+        function addPrefix(p) {
+            const ta = document.getElementById('resource-ids');
+            const lines = ta.value.split('\n').map(l => l.trim()).filter(Boolean);
+            lines.push(p);
+            ta.value = lines.join('\n') + '\n';
+            ta.focus();
+            ta.setSelectionRange(ta.value.length, ta.value.length);
+            updateCounter();
+        }
+
+        function handleKey(e) {
+            if (e.key === ',') {
+                // replace comma with newline
+                setTimeout(() => {
+                    const ta = document.getElementById('resource-ids');
+                    ta.value = ta.value.replace(/,\s*/g, '\n');
+                    updateCounter();
+                }, 0);
+            }
+        }
+
+        function parseIds() {
+            const raw = document.getElementById('resource-ids').value;
+            // support commas and newlines
+            return raw.split(/[\n,]+/).map(s => s.trim()).filter(Boolean);
+        }
+
+        function updateCounter() {
+            const ids = parseIds();
+            document.getElementById('id-counter').textContent = `${ids.length} ID${ids.length !== 1 ? 's' : ''}`;
+        }
+
+        function startProgress(count) {
+            const wrap = document.getElementById('progress-wrap');
+            const fill = document.getElementById('progress-fill');
+            const pct = document.getElementById('progress-pct');
+            const txt = document.getElementById('progress-text');
+            wrap.className = 'show';
+            const REGIONS = ["us-east-1", "us-east-2", "us-west-1", "us-west-2", "eu-west-1", "eu-west-2", "eu-central-1", "ap-southeast-1", "ap-southeast-2", "ap-northeast-1", "ap-south-1", "sa-east-1", "ca-central-1", "eu-north-1", "af-south-1", "me-south-1", "eu-south-1", "ap-northeast-2", "ap-northeast-3", "eu-west-3"];
+            let val = 0, ri = 0;
+            txt.textContent = `Searching ${count} resource${count > 1 ? 's' : ''} across 20 regions…`;
+            const iv = setInterval(() => {
+                val = Math.min(val + (Math.random() * 7), 90);
+                fill.style.width = val + '%'; pct.textContent = Math.round(val) + '%';
+                if (ri < REGIONS.length) { txt.textContent = `Scanning ${REGIONS[ri++]} (${count} resource${count > 1 ? 's' : ''})…`; }
+            }, 300);
+            return { stop: () => { clearInterval(iv); fill.style.width = '100%'; pct.textContent = '100%'; setTimeout(() => { wrap.className = ''; fill.style.width = '0%'; }, 500); } };
+        }
+
+        async function doLogin() {
+            const ak = document.getElementById('access-key').value.trim();
+            const sk = document.getElementById('secret-key').value.trim();
+            const st = document.getElementById('session-token').value.trim();
+            if (!ak || !sk) { showAlert('login-alert', 'error', 'Access Key ID and Secret Key are required.'); return; }
+            hideAlert('login-alert');
+            const btn = document.getElementById('login-btn');
+            btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Verifying…';
+            try {
+                const r = await fetch(`${API}/api/validate`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ access_key: ak, secret_key: sk, session_token: st })
+                });
+                const d = await r.json();
+                if (d.success) {
+                    creds = { access_key: ak, secret_key: sk, session_token: st };
+                    const sb = document.getElementById('session-badge');
+                    sb.style.display = 'flex'; sb.className = 'show';
+                    document.getElementById('session-account').textContent = '🏢 Account: ' + d.account_id;
+                    document.getElementById('session-arn').textContent = '👤 ' + d.user_arn;
+                    document.getElementById('search-card').style.display = 'block';
+                    document.getElementById('login-card').style.display = 'none';
+                } else { showAlert('login-alert', 'error', d.error || 'Authentication failed.'); }
+            } catch (e) { showAlert('login-alert', 'error', 'Cannot reach backend. Is the Python server running on port 5000?'); }
+            btn.disabled = false; btn.innerHTML = '🔌 Connect to AWS';
+        }
+
+        function doLogout() {
+            creds = {};
+            document.getElementById('login-card').style.display = 'block';
+            document.getElementById('search-card').style.display = 'none';
+            document.getElementById('session-badge').style.display = 'none';
+            document.getElementById('session-badge').className = '';
+            document.getElementById('results').style.display = 'none';
+            document.getElementById('resource-ids').value = '';
+            updateCounter(); hideAlert('search-alert');
+        }
+
+        async function doSearch() {
+            const ids = parseIds();
+            if (!ids.length) { showAlert('search-alert', 'error', 'Please enter at least one resource ID.'); return; }
+            if (ids.length > 20) { showAlert('search-alert', 'error', 'Maximum 20 resource IDs at once.'); return; }
+            hideAlert('search-alert');
+            document.getElementById('results').style.display = 'none';
+            const btn = document.getElementById('search-btn');
+            btn.disabled = true; btn.innerHTML = `<span class="spinner"></span> Searching ${ids.length} resource${ids.length > 1 ? 's' : ''}…`;
+            const prog = startProgress(ids.length);
+            try {
+                const r = await fetch(`${API}/api/search`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ...creds, resource_ids: ids })
+                });
+                const data = await r.json();
+                prog.stop();
+                if (data.success) { lastResults = data; renderResults(data); }
+                else showAlert('search-alert', 'error', data.error || 'Search failed.');
+            } catch (e) { prog.stop(); showAlert('search-alert', 'error', 'Cannot reach backend.'); }
+            btn.disabled = false; btn.innerHTML = '🔍 Search All Resources';
+        }
+
+        function toggleItem(idx) {
+            const body = document.getElementById('body-' + idx);
+            const arrow = document.getElementById('arrow-' + idx);
+            const open = body.classList.toggle('open');
+            arrow.classList.toggle('open', open);
+        }
+
+        function renderResults(data) {
+            // Summary bar
+            document.getElementById('summary-bar').innerHTML = `
+    <div class="summary-pill pill-total">📦 Total: ${data.total}</div>
+    <div class="summary-pill pill-found">✅ Found: ${data.found}</div>
+    ${data.not_found > 0 ? `<div class="summary-pill pill-notfound">❌ Not Found: ${data.not_found}</div>` : ''}
+  `;
+
+            const list = document.getElementById('result-list');
+            list.innerHTML = '';
+
+            data.results.forEach((r, i) => {
+                const div = document.createElement('div');
+                div.className = 'result-item' + (r.success ? '' : ' not-found-item');
+
+                if (r.success) {
+                    const tags = (r.details.Tags || []);
+                    const details = Object.entries(r.details).filter(([k]) => k !== 'Tags');
+                    const detailHtml = details.map(([k, v]) => {
+                        let disp = v ?? 'N/A';
+                        if (v === true) disp = '✅ Yes'; else if (v === false) disp = '❌ No';
+                        return `<div class="detail-item"><div class="detail-key">${k}</div><div class="detail-val">${disp}</div></div>`;
+                    }).join('');
+                    const tagHtml = tags.length ? `<div class="tags-wrap"><h5>🏷 Tags (${tags.length})</h5>${tags.map(t => `<span class="tag-pill"><span class="tag-k">${t.Key}</span><span class="tag-sep">/</span><span class="tag-v">${t.Value}</span></span>`).join('')}</div>` : '';
+
+                    div.innerHTML = `
+        <div class="result-item-header" onclick="toggleItem(${i})">
+          <span class="item-num">#${i + 1}</span>
+          <span class="item-status-ok">✅</span>
+          <span class="item-type-badge">${r.resource_type}</span>
+          <span class="item-id">${r.resource_id}</span>
+          <span class="item-region">📍 ${r.region}</span>
+          <span class="item-arrow" id="arrow-${i}">▶</span>
+        </div>
+        <div class="item-body" id="body-${i}">
+          <div class="detail-grid">${detailHtml}</div>
+          ${tagHtml}
+          <div class="meta-row"><span>🔍 Searched ${r.regions_searched} regions</span></div>
+        </div>`;
+                } else {
+                    div.innerHTML = `
+        <div class="result-item-header" onclick="toggleItem(${i})">
+          <span class="item-num">#${i + 1}</span>
+          <span class="item-status-fail">❌</span>
+          <span class="item-id">${r.resource_id}</span>
+          <span class="item-arrow" id="arrow-${i}">▶</span>
+        </div>
+        <div class="item-body" id="body-${i}">
+          <div class="result-error-msg">⚠️ ${r.error || 'Not found'}</div>
+        </div>`;
+                }
+                list.appendChild(div);
+            });
+
+            // Auto-expand if only 1 result
+            if (data.results.length === 1) toggleItem(0);
+
+            document.getElementById('meta-row').innerHTML = `<span>🕐 ${new Date().toLocaleTimeString()}</span><span>Searched 20 AWS regions per resource</span>`;
+            const res = document.getElementById('results');
+            res.style.display = 'block';
+            res.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        function exportJSON() {
+            if (!lastResults) return;
+            const blob = new Blob([JSON.stringify(lastResults, null, 2)], { type: 'application/json' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `aws-resources-${Date.now()}.json`;
+            a.click();
+        }
+    </script>
+</body>
+
+</html>
